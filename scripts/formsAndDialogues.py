@@ -5,7 +5,7 @@ import os, sys
 
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QPushButton, QLabel,
-    QLineEdit, QVBoxLayout, QHBoxLayout
+    QLineEdit, QVBoxLayout, QHBoxLayout, QFileDialog
 )
 
 class CreateAnAccount(QWidget):
@@ -17,7 +17,8 @@ class CreateAnAccount(QWidget):
         self.initApplyLayout()
 
     def initWidgets(self) -> None:                                  # -- Initiates all child widgets of the overall Widgets
-        self.nameLabel: QLabel = QLabel("Name")                     # -- Labels
+        self.welcomeLabel: QLabel = QLabel("WELCOME COLLECTORS")    # -- Labels
+        self.nameLabel: QLabel = QLabel("Name")
         self.dobLabel: QLabel = QLabel("DOB")
         self.usernameLabel: QLabel = QLabel("Username")
         self.passwordLabel: QLabel = QLabel("Password")
@@ -41,11 +42,27 @@ class CreateAnAccount(QWidget):
         self.passwordLineEdit.setPlaceholderText("Password")
         self.emailLineEdit.setPlaceholderText("Email")
 
+        self.welcomeLabel.toolTip("Welcome")                        # -- Tool Tips
+        self.nameLabel.toolTip("Name")
+        self.dobLabel.toolTip("Date of Birth")
+        self.usernameLabel.toolTip("Username")
+        self.passwordLabel.toolTip("Password")
+        self.emailLabel.toolTip("Email")
+        self.profilePicLabel.toolTip("Profile Picture")
+        self.nameLineEdit.toolTip("Name")
+        self.dobLineEdit.toolTip("Date of Birth")
+        self.usernameLineEdit.toolTip("Username")
+        self.passwordLineEdit.toolTip("Password")
+        self.emailLineEdit.toolTip("Email")
+        self.profilePicBtn.toolTip("Profile Picture")
+        self.cancelBtn.toolTip("Cancel Account Creation")
+        self.submitBtn.toolTip("Submit")
+
         self.profilePicBtn.clicked.connect(self.openImage)          # -- Button Connections
         self.cancelBtn.clicked.connect(self.cancelSubmission)
         self.submitBtn.clicked.connect(self.submitNewUser)
 
-    def initApplyLayout(self) -> None:                              # -- Initiates and applies all layouts to the main widget                                          
+    def initApplyLayout(self) -> None:                              # -- Initiates and applies all layouts to the main widget
         self.mainLayout: QVBoxLayout = QVBoxLayout()                # -- Layouts
         self.nameLayout: QHBoxLayout = QHBoxLayout()
         self.dobLayout: QHBoxLayout = QHBoxLayout()
@@ -70,6 +87,7 @@ class CreateAnAccount(QWidget):
         self.buttonLayout.addWidget(self.cancelBtn)
         self.buttonLayout.addWidget(self.submitBtn)
 
+        self.mainLayout.addWidget(self.welcomeLabel)                # -- Establish layouts/widgets in the main layout
         self.mainLayout.addLayout(self.nameLayout)
         self.mainLayout.addLayout(self.dobLayout)
         self.mainLayout.addLayout(self.usernameLayout)
@@ -78,7 +96,7 @@ class CreateAnAccount(QWidget):
         self.mainLayout.addLayout(self.profilePicLayout)
         self.mainLayout.addLayout(self.buttonLayout)
 
-        self.setLayout(self.mainLayout)
+        self.setLayout(self.mainLayout)                             # -- Sets the main layout
 
     def cancelSubmission(self) -> None:                             # -- Cancels the form and closes the form window
         pass
@@ -87,7 +105,9 @@ class CreateAnAccount(QWidget):
         pass
 
     def openImage(self) -> None:                                    # -- Opens the image Dialogue to open a photo
-        pass
+        openImg: QFileDialog = QFileDialog()
+        filePath = openImg.getOpenFileName()[0]
+        self.profilePicLabel.setText(filePath)
 
 if __name__ ==  "__main__":
     app = QApplication(sys.argv)

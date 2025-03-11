@@ -15,6 +15,8 @@ class Login(QWidget):
         super().__init__()
         self.dataBass: object = dataBass
         self.loginSuccessful: bool = None
+        self.userId: int = None
+        
         self.initWidgets()
         self.initEditWidgets()
         self.initApplyLayout()
