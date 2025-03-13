@@ -45,6 +45,13 @@ class CollectionPage(QWidget):
         for genre in self.testGenreList:
             self.currentGenreCombo.addItem(genre)
 
+        self.currentCollectionCombo.setToolTip("Current Collection")    # -- ToolTips
+        self.currentGenreCombo.setToolTip("Current Genre")
+        self.activeSelectionLabel.setToolTip("Current Selection")
+        self.backBtn.setToolTip("Back")
+        self.logOutBtn.setToolTip("Logout")
+        self.addBtn.setToolTip("Add a Collectable")
+
     def initApplyLayout(self) -> None:                                  # -- Initiates and applies all layouts to the main widget
         self.mainLayout: QHBoxLayout = QHBoxLayout()
         self.leftLayout: QVBoxLayout = QVBoxLayout()
@@ -61,7 +68,7 @@ class CollectionPage(QWidget):
 
         self.setLayout(self.mainLayout)      
 
-    def addCollectable(self) -> None:
+    def addCollectable(self) -> None:                                   # -- Opens the form to add a new Collectable to the Database
         pass
 
 
