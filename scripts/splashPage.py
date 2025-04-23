@@ -4,7 +4,7 @@
 
 import os, sys
 
-from databaseQueries import DatabaseQueries
+#from databaseQueries import DatabaseQueries
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QPushButton
