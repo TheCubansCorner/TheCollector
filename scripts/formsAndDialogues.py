@@ -8,7 +8,8 @@ from PyQt6.QtCore import QTimer, QDate, QTime
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QPushButton, QLabel,
     QLineEdit, QVBoxLayout, QHBoxLayout, QFileDialog,
-    QComboBox, QLineEdit, QTimeEdit, QDateEdit
+    QComboBox, QLineEdit, QTimeEdit, QDateEdit,
+    QTextEdit
 )
 
 
@@ -294,6 +295,7 @@ class ToDoList(QWidget):
     def initApplication(self) -> None:
         self.initWidgets()
         self.initEditWidgets()
+        self.setWidgetToolTips()
         self.initConnections()
         self.initLayouts()
         self.ApplyLayouts()
@@ -311,6 +313,10 @@ class ToDoList(QWidget):
         self.toDoBtn: QPushButton = QPushButton("+")
 
     def initEditWidgets(self) -> None:
+        self.dateEntry.setDate(QDate.currentDate())
+        self.timeEntry.setTime(QTime.currentTime())
+
+    def setWidgetToolTips(self) -> None:
         pass
 
     def initConnections(self) -> None:
@@ -347,11 +353,13 @@ class ToDoList(QWidget):
     def addTodoTask(self) -> None:
         pass
 
+
 class DailyEvent(QWidget):
     def __init__(self) -> None:
         super().__init__()
         # Time, Date, Title, event description
         self.initApplication()
+        #TODO: Add start and end time for events
 
     def initApplication(self) -> None:
         self.initWidgets()
@@ -364,6 +372,9 @@ class DailyEvent(QWidget):
         pass
 
     def initEditWidgets(self) -> None:
+        pass
+
+    def setWidgetToolTips(self) -> None:
         pass
 
     def initConnections(self) -> None:
@@ -392,6 +403,9 @@ class Note(QWidget):
         pass
 
     def initEditWidgets(self) -> None:
+        pass
+
+    def setWidgetToolTips(self) -> None:
         pass
 
     def initConnections(self) -> None:
