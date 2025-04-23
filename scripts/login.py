@@ -3,6 +3,7 @@
 
 import sys
 
+
 from formsAndDialogues import CreateAnAccount
 from PyQt6.QtWidgets import (
     QApplication, QPushButton, 
@@ -11,21 +12,24 @@ from PyQt6.QtWidgets import (
                              )
 
 class Login(QWidget):
-    def __init__(self, dataBass):                                                           # -- Initiates Class Variables and functionality
+    def __init__(self, db):                                                           # -- Initiates Class Variables and functionality
         super().__init__()
-        self.dataBass: object = dataBass
+        self.dataBass = db
         self.loginSuccessful: bool = None
         self.userId: int = None
-        
+
+        self.setWindowTitle("WELCOME!")  
         self.initWidgets()
         self.initEditWidgets()
         self.initApplyLayout()
+        self.buttonConnections()
 
     def initWidgets(self) -> None:                                                          # -- Initiates all child widgets of the overall Widget
         self.loginLabel: QLabel = QLabel("LOGIN")
         self.usernameLabel: QLabel = QLabel("Username: ")
         self.passwordLabel: QLabel = QLabel("Password: ")
         self.messageLabel: QLabel = QLabel()
+        self.errorLabel: QLabel = QLabel()
         
         self.usernameLineEdit: QLineEdit = QLineEdit()
         self.passwordLineEdit: QLineEdit = QLineEdit()
@@ -70,17 +74,32 @@ class Login(QWidget):
         self.mainLayout.addWidget(self.messageLabel)
         self.mainLayout.addLayout(self.buttonLayout)
         self.mainLayout.addWidget(self.createAccountBtn)
+        self.mainLayout.addWidget(self.errorLabel)
 
         self.setLayout(self.mainLayout)
 
+    def buttonConnections(self) -> None:
+        self.createAccountBtn.clicked.connect(self.createAccount)
+        self.loginBtn.clicked.connect(self.signIN)
+
     def signIN(self) -> None:                                                               # -- Sends credentials to be checked and if confirmed sends info to main application
-        pass
+        username: str = self.usernameLineEdit.text()
+        password: str = self.passwordLineEdit.text()
+        confirm: bool = self.dataBass.checkLogin(username, password)
+
+        if confirm:
+            self.userId = self.dataBass.fetchUserID(username, password)[0][0]
+            self.errorLabel.setText("Login Successful!")
+            self.close()
+        else:
+            self.errorLabel.setText(self.dataBass.errorMessage)
 
     def createAccount(self) -> None:                                                        # -- Opens up a form to create an account
-        pass
+        self.createAnAccount: CreateAnAccount = CreateAnAccount(self.dataBass)
+        self.createAnAccount.show()
 
     def cancelLogin(self) -> None:                                                          # -- Cancels login and shuts down the application
-        pass
+        sys.exit()
 
 if __name__ == "__main__":
     app: QApplication = QApplication(sys.argv)

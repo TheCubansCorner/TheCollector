@@ -12,6 +12,8 @@ from PyQt6.QtWidgets import (
 class CollectionPage(QWidget):
     def __init__(self) -> None:                                         # -- Initiates Class Variables and functionality
         super().__init__()
+        #self.userID = userid
+        #self.adminAccess: bool = adminAccess
         self.collectionComboInfo: list = [
             "Movies", " Video Games", "Records", "Cassettes",
             "CD", "Toys", "Manga", "Comics"
