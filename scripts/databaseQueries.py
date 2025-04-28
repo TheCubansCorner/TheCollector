@@ -18,12 +18,14 @@ class DatabaseQueries:
             CREATE TABLE IF NOT EXISTS users(   
             userID INTEGER PRIMARY KEY NOT NULL,
             username CHAR(50) NOT NULL,
-            password CHAR(50) NOT NULL
+            password CHAR(50) NOT NULL,
+            admin BOOLEAN
             )""")
         
         # -- User Informaiton
         self.curse.execute("""
             CREATE TABLE IF NOT EXISTS userInformation(
+            informationID INTEGER PRIMARY KEY NOT NULL,
             userID INTEGER,
             firstName CHAR(20) NOT NULL,
             lastName CHAR(20) NOT NULL,
@@ -33,7 +35,41 @@ class DatabaseQueries:
             )""")
 
         # -- Collection Lists
+
+
         # -- TODO list 
+        self.curse.execute("""
+            CREATE TABLE IF NOT EXISTS todoInformation(
+            todoID INTEGER PRIMARY KEY NOT NULL,
+            userID INTEGER NOT NULL,
+            time CHAR(10) NOT NULL,
+            date CHAR(10) NOT NULL,
+            title CHAR(30) NOT NULL,
+            todo TEXT NOT NULL
+            )""")
+        
+        # -- Note
+        self.curse.execute("""
+            CREATE TABLE IF NOT EXISTS noteInformation(
+            noteID INTEGER PRIMARY KEY NOT NULL,
+            userID INTEGER NOT NULL,
+            time CHAR(10) NOT NULL,
+            date CHAR(10) NOT NULL,
+            title CHAR(30) NOT NULL,
+            note TEXT NOT NULL               
+            )""")
+        
+        # -- Event
+        self.curse.execute("""
+            CREATE TABLE IF NOT EXISTS eventInformation(
+            eventID INTEGER PRIMARY KEY NOT NULL,
+            userID INTEGER NOT NULL,
+            startTime CHAR(10) NOT NULL,
+            endTime CHAR(10) NOT NULL,
+            date CHAR(10) NOT NULL,
+            title CHAR(30) NOT NULL,
+            description TEXT NOT NULL              
+            )""")
         # -- CSV file names       
 
     def fetchAllUsers(self) -> list:                                                # -- Returns a list of all the users
@@ -97,7 +133,7 @@ class DatabaseQueries:
         
         return True
 
-    def checkLogin(self, username: str, password: str) -> bool:
+    def checkLogin(self, username: str, password: str) -> bool:                     # -- CHecks if a username and password exist in the database.
         user = self.database.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchall()
         self.errorMessage: str = ""
 
@@ -112,8 +148,80 @@ class DatabaseQueries:
 
         return False
 
+    def submitEventInformation(self, submissionInfo: tuple, appType: str) -> None:                                  # -- Submits a User Todo List to the database.
+        check = tuple(submissionInfo)
+        exists: bool = self.submissionExists(check, appType)
+
+        if not exists:
+            if appType == "to do list":
+                self.curse.execute("""
+                    INSERT INTO todoInformation (userID, time, date, title, todo) 
+                    VALUES (?, ?, ?, ?, ?)
+                    """, submissionInfo)
+                self.database.commit()
+                return True
+            elif appType == "note":
+                self.curse.execute("""
+                    INSERT INTO noteInformation (userID, time, date, title, note)
+                    VALUES (?, ?, ?, ?, ?)
+                    """,submissionInfo)
+                self.database.commit()
+                return True
+            elif appType == "event":
+                self.curse.execute("""
+                    INSERT INTO eventInformation (userID, startTime, endTime, date, title, description)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """, submissionInfo)
+                self.database.commit()
+                return True
+
+        return False
+
+    def submissionExists(self, submissionInfo: tuple, appType: str) -> bool:                            # -- Checks if a submission exists based on the submitted information.
+        if appType == "to do list":
+            checker: list = self.curse.execute("""
+                SELECT userID FROM todoInformation
+                WHERE userID = ? 
+                AND time = ? 
+                AND date = ? 
+                AND title = ? 
+                AND todo = ?
+                """, submissionInfo).fetchall()
+        elif appType == "note":
+            checker: list = self.curse.execute("""
+                SELECT userID 
+                FROM noteInformation
+                WHERE userID = ?
+                AND time = ?
+                AND date = ?
+                AND title = ?
+                AND note = ?
+                """, submissionInfo).fetchall()
+        elif appType == "event":
+            checker: list = self.curse.execute("""
+                SELECT userID 
+                FROM eventInformation
+                WHERE userID = ?
+                AND startTime = ?
+                AND endTime = ?
+                AND date = ?
+                AND title = ?
+                AND description = ?
+                """, submissionInfo).fetchall()
+            
+        if len(checker) > 0:
+            return True
+            
+        return False
+
+
 if __name__ == "__main__":
     database: DatabaseQueries = DatabaseQueries()
 
-    x = database.checkLogin("usernasdasdsaame", "password")
+    #x = database.checkLogin("usernasdasdsaame", "password")
+    todo = database.submitEventInformation((1, "5:30 AM", "11/28/1987", "Time Squad", "- Clean your bum"), "to do list")
+    note = database.submitEventInformation((1, "3:33 PM", "12/8/1986", "A Nightmare on my street", "DONT FALL ASLEEP"), "note")
+    event = database.submitEventInformation((1, "1:00 PM", "2:00 PM", "10/10/????", "Psycho", "Hello mother"), "event")
+    #print(database.todoExists((1, "5:30 AM", "11/28/1987", "Time Squad")))
+    #print(database.curse.execute("SELECT * FROM todoInformation").fetchall())
     

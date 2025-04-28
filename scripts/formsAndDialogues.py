@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import (
     QApplication, QWidget, QPushButton, QLabel,
     QLineEdit, QVBoxLayout, QHBoxLayout, QFileDialog,
     QComboBox, QLineEdit, QTimeEdit, QDateEdit,
-    QTextEdit
+    QTextEdit, QListWidget
 )
 
 
@@ -288,8 +288,12 @@ class CreateAnAccount(QWidget):
 class ToDoList(QWidget):
     def __init__(self) -> None:
         super().__init__()
-        #Time, date, title, list
+        self.currentTime: QTime.currentTime = QTime.currentTime()
         self.currentDate: QDate.currentDate = QDate.currentDate()
+        self.todoString: str = ""
+        self.todoList: list = []
+        self.errorMessage: str = ""
+        self.errorCode: str = ""
         self.initApplication()
         
     def initApplication(self) -> None:
@@ -304,23 +308,35 @@ class ToDoList(QWidget):
         self.timeLabel: QLabel = QLabel("Time:")
         self.dateLabel: QLabel = QLabel("Date:")
         self.titleLabel: QLabel = QLabel("Title:")
+        self.errorLabel: QLabel = QLabel()
         
         self.timeEntry: QTimeEdit = QTimeEdit()
-        self.dateEntry: QDate = QDateEdit()
+        self.dateEntry: QDateEdit = QDateEdit()
         self.titleEntry: QLineEdit = QLineEdit()
         self.toDoEntry: QLineEdit = QLineEdit()
+
+        self.toDoListWidg: QListWidget = QListWidget()
 
         self.toDoBtn: QPushButton = QPushButton("+")
 
     def initEditWidgets(self) -> None:
-        self.dateEntry.setDate(QDate.currentDate())
-        self.timeEntry.setTime(QTime.currentTime())
+        self.dateEntry.setDate(self.currentDate)
+        self.timeEntry.setTime(self.currentTime)
 
     def setWidgetToolTips(self) -> None:
-        pass
+        self.timeLabel.setToolTip("Time")
+        self.dateLabel.setToolTip("Date")
+        self.titleLabel.setToolTip("Title")
+        self.toDoListWidg.setToolTip("To Do List")
+        self.timeEntry.setToolTip("Time Format HH:MM AM/PM")
+        self.dateEntry.setToolTip("Date Format DD/MM/YYYY")
+        self.titleEntry.setToolTip("Title of the to do list")
+        self.toDoEntry.setToolTip("To Do to be added to the list.")
+        self.toDoBtn.setToolTip("Add To Do to")
 
     def initConnections(self) -> None:
-        pass
+        self.toDoBtn.clicked.connect(self.addTodoTask)
+        self.toDoListWidg.doubleClicked.connect(self.selectItem)
     
     def initLayouts(self) -> None:
         self.mainLayout: QVBoxLayout = QVBoxLayout()
@@ -335,6 +351,8 @@ class ToDoList(QWidget):
         self.mainLayout.addLayout(self.dateLayout)
         self.mainLayout.addLayout(self.titleLayout)
         self.mainLayout.addLayout(self.addToDoLayout)
+        self.mainLayout.addWidget(self.toDoListWidg)
+        self.mainLayout.addWidget(self.errorLabel)
 
         self.timeLayout.addWidget(self.timeLabel)
         self.timeLayout.addWidget(self.timeEntry)
@@ -351,14 +369,121 @@ class ToDoList(QWidget):
         self.setLayout(self.mainLayout)
 
     def addTodoTask(self) -> None:
-        pass
+        if self.toDoEntry.text() == "":
+            self.errorMessage = "You cannot add a blank task."
+            self.errorCode = " 005,"
+            self.errorLabel.setText(self.errorMessage)
+            return
+        
+        self.todoString = f"- {self.toDoEntry.text()}"
+        self.toDoListWidg.addItem(self.todoString)
+        self.toDoEntry.clear()
 
+    def checkEntries(self) -> list:
+        self.errorMessage = ""
+        self.errorCode = ""
+        error: bool = False
+
+        if self.dateEntry.text() == "":
+            self.errorMessage += "*You must choose a valid date*\n"
+            self.errorCode += " 001,"
+            error = True
+        
+        if self.titleEntry.text() == "":
+            self.errorMessage += "*You must provide a title*\n"
+            self.errorCode += " 002,"
+            error = True
+        
+        if self.toDoListWidg.count() == 0:
+            self.errorMessage += "*You must have at least one thing to do.*\n"
+            self.errorCode += " 003,"
+            error = True
+
+        if error:
+            self.errorLabel.setText(self.errorMessage)
+            return []
+        
+        toDoString: str = ""
+
+        return [self.timeEntry.text(), self.dateEntry.text(), self.titleEntry.text(), self.getListItems()]
+
+    def getListItems(self) -> str:
+        toDoString: str = ""
+
+        for inx in range(self.toDoListWidg.count()):
+            toDoString += f"{self.toDoListWidg.item(inx).text()}\n"
+        
+        return toDoString
+
+    def selectItem(self) -> None:
+        currentItem = self.toDoListWidg.currentItem().text()
+        self.selectItemWIndow: QWidget = QWidget()
+        self.taskLabel: QLabel = QLabel()
+        self.editBtn: QPushButton = QPushButton("Edit")
+        self.deleteBtn: QPushButton = QPushButton("Delete")
+        self.mainLayout: QVBoxLayout = QVBoxLayout()
+        self.labelLayout: QHBoxLayout = QVBoxLayout()
+        self.btnLayout: QHBoxLayout = QHBoxLayout()
+        self.deleteBtn.clicked.connect(self.deleteTask)
+        self.editBtn.clicked.connect(self.editTask)
+        self.taskLabel.setText(currentItem)
+        self.mainLayout.addLayout(self.labelLayout)
+        self.mainLayout.addLayout(self.btnLayout)
+        
+        self.btnLayout.addWidget(self.editBtn)
+        self.btnLayout.addWidget(self.deleteBtn)
+        self.labelLayout.addWidget(self.taskLabel)
+        self.selectItemWIndow.setLayout(self.mainLayout)
+        self.selectItemWIndow.show()
+        self.setEnabled(False)
+
+    def deleteTask(self) -> None:
+        self.toDoListWidg.takeItem(self.toDoListWidg.currentRow())
+        self.selectItemWIndow.close()
+        self.setEnabled(True)
+
+    def editTask(self) -> None:
+        taskText: str = self.taskLabel.text().strip("-")
+
+        self.editBtn.hide()
+        self.deleteBtn.hide()
+        self.taskLabel.hide()
+
+        self.taskEntry: QTextEdit = QTextEdit()
+        self.cancelBtn: QPushButton = QPushButton("Cancel")
+        self.submitBtn: QPushButton = QPushButton("Submit")
+
+        self.taskEntry.setText(taskText)
+
+        self.cancelBtn.clicked.connect(self.cancelEdit)
+        self.submitBtn.clicked.connect(self.submitEdit)
+
+        self.labelLayout.addWidget(self.taskEntry)
+        self.btnLayout.addWidget(self.submitBtn)
+        self.btnLayout.addWidget(self.cancelBtn)
+
+    def cancelEdit(self) -> None:
+        self.taskEntry.hide()
+        self.cancelBtn.hide()
+        self.submitBtn.hide()
+        self.editBtn.show()
+        self.deleteBtn.show()
+        self.taskLabel.show()
+
+    def submitEdit(self) -> None:
+        self.toDoListWidg.insertItem(self.toDoListWidg.currentRow(), f"-{self.taskEntry.toPlainText()}")
+        self.toDoListWidg.takeItem(self.toDoListWidg.currentRow())
+        self.selectItemWIndow.close()
+        self.setEnabled(True)
+        
 
 class DailyEvent(QWidget):
     def __init__(self) -> None:
         super().__init__()
         # Time, Date, Title, event description
         self.initApplication()
+        self.errorMessage: str = "Unknown"
+        self.errorCode: str = "Unknown"
         #TODO: Add start and end time for events
 
     def initApplication(self) -> None:
@@ -369,27 +494,100 @@ class DailyEvent(QWidget):
         self.ApplyLayouts()
 
     def initWidgets(self) -> None:
-        pass
+        self.startTimeLabel: QLabel = QLabel("Start Time:")
+        self.endTimeLabel: QLabel = QLabel("End Time:")
+        self.dateLabel: QLabel = QLabel("Date: ")
+        self.titleLabel: QLabel = QLabel("Title")
+        self.descriptionLabel: QLabel = QLabel("Description")
+        self.errorLabel: QLabel = QLabel()
+
+        self.starttimeEntry: QTimeEdit = QTimeEdit()
+        self.endTimeEntry: QTimeEdit = QTimeEdit()
+        self.dateEntry: QDateEdit = QDateEdit()
+        self.titleEntry: QLineEdit = QLineEdit()
+        self.descriptionEntry: QTextEdit = QTextEdit()
 
     def initEditWidgets(self) -> None:
         pass
 
     def setWidgetToolTips(self) -> None:
-        pass
+        self.startTimeLabel.setToolTip("Event Start Time")
+        self.endTimeLabel.setToolTip("Event End Time")
+        self.dateLabel.setToolTip("Date of the Event")
+        self.titleLabel.setToolTip("Title")
+        self.descriptionLabel.setToolTip("Description")
+        self.errorLabel.setToolTip(f"Error Code: {self.errorCode} -- {self.errorMessage}")
 
     def initConnections(self) -> None:
         pass
     
     def initLayouts(self) -> None:
-        pass
+        self.mainLayout: QVBoxLayout = QVBoxLayout()
+        self.startLayout: QHBoxLayout = QHBoxLayout()
+        self.endLayout: QHBoxLayout = QHBoxLayout()
+        self.dateLayout: QHBoxLayout = QHBoxLayout()
+        self.descriptionLayout: QVBoxLayout = QVBoxLayout()
+        self.titleLayout: QHBoxLayout = QHBoxLayout()
 
     def ApplyLayouts(self) -> None:
-        pass
+        self.mainLayout.addLayout(self.startLayout)
+        self.mainLayout.addLayout(self.endLayout)
+        self.mainLayout.addLayout(self.dateLayout)
+        self.mainLayout.addLayout(self.titleLayout)
+        self.mainLayout.addLayout(self.descriptionLayout)
+        self.mainLayout.addWidget(self.errorLabel)
+        
+        self.mainLayout.addWidget(self.errorLabel)
+
+        self.startLayout.addWidget(self.startTimeLabel)
+        self.startLayout.addWidget(self.starttimeEntry)
+
+        self.endLayout.addWidget(self.endTimeLabel)
+        self.endLayout.addWidget(self.endTimeEntry)
+
+        self.dateLayout.addWidget(self.dateLabel)
+        self.dateLayout.addWidget(self.dateEntry)
+
+        self.titleLayout.addWidget(self.titleLabel)
+        self.titleLayout.addWidget(self.titleEntry)
+
+        self.descriptionLayout.addWidget(self.descriptionLabel)
+        self.descriptionLayout.addWidget(self.descriptionEntry)
+
+        self.setLayout(self.mainLayout)
+
+    def checkEntries(self) -> list:
+        self.errorMessage = ""
+        self.errorCode = ""
+        error: bool = False
+
+        self.errorLabel.clear()
+
+        if self.titleEntry.text() == "":
+            self.errorMessage += "*You must provide a title.*\n"
+            self.errorCode += " 002,"
+            error = True
+
+        if self.descriptionEntry.toPlainText() == "":
+            self.errorMessage += "*You must provide a description.*\n"
+            self.errorCode += " 004,"
+            error = True
+        
+        if error:
+            self.errorLabel.setText(self.errorMessage)
+            return []
+        
+        return [self.starttimeEntry.text(), self.endTimeEntry.text(), self.dateEntry.text(),
+                self.titleEntry.text(), self.descriptionEntry.toPlainText()
+                ]
+
 
 class Note(QWidget):
     def __init__(self) -> None:
         super().__init__()
         # Time, Date, Title, Body
+        self.errorMessage: str = ""
+        self.errorCode: str = ""
         self.initApplication()
 
     def initApplication(self) -> None:
@@ -400,7 +598,16 @@ class Note(QWidget):
         self.ApplyLayouts()
 
     def initWidgets(self) -> None:
-        pass
+        self.timeLabel: QLabel = QLabel("Time")
+        self.dateLabel: QLabel = QLabel("Date")
+        self.titleLabel: QLabel = QLabel("Title")
+        self.descriptionLabel: QLabel = QLabel("Description")
+        self.errorLabel: QLabel = QLabel()
+        
+        self.timeEntry: QTimeEdit = QTimeEdit()
+        self.dateEntry: QDateEdit = QDateEdit()
+        self.titleEntry: QLineEdit = QLineEdit()
+        self.descriptionEntry: QTextEdit = QTextEdit()
 
     def initEditWidgets(self) -> None:
         pass
@@ -412,14 +619,58 @@ class Note(QWidget):
         pass
     
     def initLayouts(self) -> None:
-        pass
+        self.mainLayout: QVBoxLayout = QVBoxLayout()
+        self.timeLayout: QHBoxLayout = QHBoxLayout()
+        self.dateLayout: QHBoxLayout = QHBoxLayout()
+        self.titleLayout: QHBoxLayout = QHBoxLayout()
+        self.desciptionLayout: QVBoxLayout = QVBoxLayout()
 
     def ApplyLayouts(self) -> None:
-        pass
+        self.mainLayout.addLayout(self.timeLayout)
+        self.mainLayout.addLayout(self.dateLayout)
+        self.mainLayout.addLayout(self.titleLayout)
+        self.mainLayout.addLayout(self.desciptionLayout)
+        self.mainLayout.addWidget(self.errorLabel)
+
+        self.timeLayout.addWidget(self.timeLabel)
+        self.timeLayout.addWidget(self.timeEntry)
+
+        self.dateLayout.addWidget(self.dateLabel)
+        self.dateLayout.addWidget(self.dateEntry)
+
+        self.titleLayout.addWidget(self.titleLabel)
+        self.titleLayout.addWidget(self.titleEntry)
+
+        self.desciptionLayout.addWidget(self.descriptionLabel)
+        self.desciptionLayout.addWidget(self.descriptionEntry)
+
+        self.setLayout(self.mainLayout)
+
+    def checkEntries(self) -> list:
+        error: bool = False
+        if self.titleEntry.text() == "":
+            self.errorMessage += "*You must provide a Title*\n"
+            self.errorCode += " 002,"
+            error = True
+
+        if self.descriptionEntry.toPlainText() == "":
+            self.errorMessage += "*You must provide a Description*\n"
+            self.errorCode += " 004,"
+            error = True
+
+        if error:
+            self.errorLabel.setText(self.errorMessage)
+            return []
+        
+        return [self.timeEntry.text(), self.dateEntry.text(), self.titleEntry.text(), self.descriptionEntry.toPlainText()]
+
 
 class CreateNewEvent(QWidget):
-    def __init__(self) -> None:
+    def __init__(self, db, userID: int) -> None:
         super().__init__()
+        self.dataBass = db
+        self.userID = userID
+        self.currentSelection: str = "no selection"
         self.applicaitonDict: dict = {
             "to do list" : ToDoList(),
             "event" : DailyEvent(),
@@ -436,7 +687,10 @@ class CreateNewEvent(QWidget):
         self.initConnections()
 
     def initWidgets(self) -> None:                  # -- Initiates all child widgets
+        self.errorLabel: QLabel = QLabel()
         self.eventTypeCombo: QComboBox = QComboBox()
+
+        self.submitBtn: QPushButton = QPushButton("Submit")
 
     def initEditWidgets(self) -> None:              # -- Edits widgets before applying them
         self.eventTypeCombo.addItem("No Selection")
@@ -449,15 +703,17 @@ class CreateNewEvent(QWidget):
 
     def initConnections(self) -> None:              # -- Initiates connections between widgets and functions
         self.eventTypeCombo.currentIndexChanged.connect(self.changeActiveEvent)
+        self.submitBtn.clicked.connect(self.submitInformation)
 
     def initLayouts(self) -> None:                  # -- Initiates the layouts
         self.mainLayout: QVBoxLayout = QVBoxLayout()
 
-    def ApplyLayouts(self) -> None:             # -- Applies widgets to the layouts/applies the main layout
+    def ApplyLayouts(self) -> None:                 # -- Applies widgets to the layouts/applies the main layout
         self.mainLayout.addWidget(self.eventTypeCombo)
         self.mainLayout.addWidget(self.applicaitonDict["to do list"])
         self.mainLayout.addWidget(self.applicaitonDict["event"])
         self.mainLayout.addWidget(self.applicaitonDict["note"])
+        self.mainLayout.addWidget(self.submitBtn)
 
         self.setLayout(self.mainLayout)
 
@@ -468,12 +724,42 @@ class CreateNewEvent(QWidget):
         for app in self.applicaitonDict.values():
             app.hide()
 
-        if currentSelection.lower != "no selection":
-            self.applicaitonDict[currentSelection.lower()].show()
+        if currentSelection.lower() != "no selection":
+            self.currentSelection = currentSelection.lower()
+            self.applicaitonDict[self.currentSelection].show()
+        else:
+            self.currentSelection = "no selection"
+        
+        self.applicaitonDict[self.currentSelection].errorLabel.clear()      # Clears Error Messages
+
+
+    def submitInformation(self) -> None:
+        if self.currentSelection == "no selection":
+            return
+        
+        currentSubmittionInformation: list = self.applicaitonDict[self.currentSelection].checkEntries()
+        if len(currentSubmittionInformation) > 0:    
+            if self.currentSelection == "to do list":
+                # Time, Date, Title, To Do (str)
+                success: bool = self.dataBass.submitEventInformation((self.userID,) + tuple(currentSubmittionInformation), "to do list")
+            elif self.currentSelection == "event":
+                # Start Time, End Time, date, title, description
+                success: bool = self.dataBass.submitEventInformation((self.userID,) + tuple(currentSubmittionInformation), "event")
+            elif self.currentSelection == "note":
+                # Time, Date, Title Description
+                success: bool = self.dataBass.submitEventInformation((self.userID,) + tuple(currentSubmittionInformation), "note")
+
+        if success:
+            print("success")
+            self.close()
+        else:
+            self.applicaitonDict[self.currentSelection].errorLabel.setText("This submission conflicts with a previous submission")
         
 
 if __name__ ==  "__main__":
+    #Test
+    db = DatabaseQueries()
     app = QApplication(sys.argv)
-    createAnAccount: CreateAnAccount = CreateNewEvent() #CreateAnAccount()
+    createAnAccount: CreateAnAccount = CreateNewEvent(db, 1) #CreateAnAccount()
     createAnAccount.show()
     sys.exit(app.exec())
