@@ -6,7 +6,8 @@ import os, sys, threading, time
 
 from login import Login
 from splashPage import SplashPage
-from databaseQueries import DatabaseQueries
+from calandarWidget import Schedule
+
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QHBoxLayout,
     QTabWidget, QPushButton,
@@ -18,12 +19,12 @@ from PyQt6.QtCore import QTimer
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
+        
         self.applications: dict = {
             "login" : Login,
             "splash page": SplashPage
         }
-        self.dataBass: DatabaseQueries = DatabaseQueries()
-        self.login = self.applications["login"](self.dataBass)
+        self.login = self.applications["login"]()
         self.activeUser: int = None
         self.currentApp: int = "login"
 
@@ -44,12 +45,16 @@ class MainWindow(QMainWindow):
 
     def initWidgets(self) -> None:
         self.applicationTabs: QTabWidget = QTabWidget()
+        self.initLayouts()
 
     def initLayouts(self) -> None:
         self.mainLayout: QVBoxLayout = QVBoxLayout()
         self.mainLayout.addWidget(self.applicationTabs)
+        self.schedule: Schedule = Schedule()
+        self.applicationTabs.addTab(self.schedule, "Home")
+        
+        self.setCentralWidget(self.applicationTabs)
 
-        self.setLayout(self.mainLayout)
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@
 
 import sys
 
-
+from databaseQueries import DatabaseQueries
 from formsAndDialogues import CreateAnAccount
 from PyQt6.QtWidgets import (
     QApplication, QPushButton, 
@@ -12,9 +12,9 @@ from PyQt6.QtWidgets import (
                              )
 
 class Login(QWidget):
-    def __init__(self, db):                                                           # -- Initiates Class Variables and functionality
+    def __init__(self):                                                           # -- Initiates Class Variables and functionality
         super().__init__()
-        self.dataBass = db
+        self.dataBass: DatabaseQueries = DatabaseQueries()
         self.loginSuccessful: bool = None
         self.userId: int = None
 

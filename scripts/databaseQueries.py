@@ -18,25 +18,23 @@ class DatabaseQueries:
             CREATE TABLE IF NOT EXISTS users(   
             userID INTEGER PRIMARY KEY NOT NULL,
             username CHAR(50) NOT NULL,
-            password CHAR(50) NOT NULL,
-            admin BOOLEAN
+            password CHAR(50) NOT NULL
             )""")
         
         # -- User Informaiton
         self.curse.execute("""
             CREATE TABLE IF NOT EXISTS userInformation(
             informationID INTEGER PRIMARY KEY NOT NULL,
-            userID INTEGER,
+            userID INTEGER NOT NULL,
             firstName CHAR(20) NOT NULL,
             lastName CHAR(20) NOT NULL,
             dob CHAR(8) NOT NULL,
             email CHAR(50) NOT NULL,
-            profilePicture CHAR(100) NOT NULL
+            profilePicture CHAR(100) NOT NULL,
+            admin BOOLEAN,
+            FOREIGN KEY (userID) REFERENCES users(userID) ON UPDATE CASCADE
             )""")
-
-        # -- Collection Lists
-
-
+        
         # -- TODO list 
         self.curse.execute("""
             CREATE TABLE IF NOT EXISTS todoInformation(
@@ -45,7 +43,8 @@ class DatabaseQueries:
             time CHAR(10) NOT NULL,
             date CHAR(10) NOT NULL,
             title CHAR(30) NOT NULL,
-            todo TEXT NOT NULL
+            todo TEXT NOT NULL,
+            FOREIGN KEY (userID) REFERENCES users(userID) ON UPDATE CASCADE
             )""")
         
         # -- Note
@@ -56,7 +55,8 @@ class DatabaseQueries:
             time CHAR(10) NOT NULL,
             date CHAR(10) NOT NULL,
             title CHAR(30) NOT NULL,
-            note TEXT NOT NULL               
+            note TEXT NOT NULL, 
+            FOREIGN KEY (userID) REFERENCES users(userID) ON UPDATE CASCADE              
             )""")
         
         # -- Event
@@ -68,8 +68,11 @@ class DatabaseQueries:
             endTime CHAR(10) NOT NULL,
             date CHAR(10) NOT NULL,
             title CHAR(30) NOT NULL,
-            description TEXT NOT NULL              
+            description TEXT NOT NULL, 
+            FOREIGN KEY (userID) REFERENCES users(userID) ON UPDATE CASCADE          
             )""")
+        
+        # -- Collection Lists
         # -- CSV file names       
 
     def fetchAllUsers(self) -> list:                                                # -- Returns a list of all the users
@@ -98,10 +101,16 @@ class DatabaseQueries:
 
             userID = int(self.fetchUserID(user[0], user[1])[0][0])
             userInformation = ((userID,) + tuple(user[2:]))
-            self.curse.execute("""
-                INSERT INTO userInformation (userID, firstName, lastName, dob, email, profilePicture)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """, userInformation)
+            if len(userInformation) == 7:
+                self.curse.execute("""
+                    INSERT INTO userInformation (userID, firstName, lastName, dob, email, profilePicture, admin)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """, userInformation)
+            else:
+                self.curse.execute("""
+                    INSERT INTO userInformation (userID, firstName, lastName, dob, email, profilePicture)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """, userInformation)
             
             self.database.commit()
             
@@ -218,10 +227,48 @@ class DatabaseQueries:
 if __name__ == "__main__":
     database: DatabaseQueries = DatabaseQueries()
 
-    #x = database.checkLogin("usernasdasdsaame", "password")
+    database.createUser(("TheCubanIsIn", "Sopu88!!", "Armando", "Garcia", "11/28/1987", "thecubanisin@gmail.com", "butts.png", True))
     todo = database.submitEventInformation((1, "5:30 AM", "11/28/1987", "Time Squad", "- Clean your bum"), "to do list")
     note = database.submitEventInformation((1, "3:33 PM", "12/8/1986", "A Nightmare on my street", "DONT FALL ASLEEP"), "note")
     event = database.submitEventInformation((1, "1:00 PM", "2:00 PM", "10/10/????", "Psycho", "Hello mother"), "event")
-    #print(database.todoExists((1, "5:30 AM", "11/28/1987", "Time Squad")))
-    #print(database.curse.execute("SELECT * FROM todoInformation").fetchall())
+
+    x = (database.curse.execute("SELECT userID FROM users WHERE username = ?", ("TheCubanIsIn",)).fetchall()[0][0],)
+    
+    print("Login Informaiton")
+    print("=================")
+
+    z = database.curse.execute("SELECT * FROM users WHERE userID = ?", x).fetchall()[0]
+    
+    print(z)
+    print()
+    print("User Information")
+    print("================")
+
+    z = database.curse.execute("SELECT * FROM userInformation WHERE userID = ?", x).fetchall()
+    for a in z:
+        print(a)
+
+    print()
+    print("TO Do:")
+    print("======")
+    
+    z = database.curse.execute("SELECT * FROM todoInformation WHERE userID = ?", x).fetchall()
+    for a in z:
+        print(a)
+    
+    print()
+    print("Note:")
+    print("=====")
+    
+    z = database.curse.execute("SELECT * FROM noteInformation WHERE userID = ?", x).fetchall()
+    for a in z:
+        print(a)
+    
+    print()
+    print("Event")
+    print("=====")
+    
+    z = database.curse.execute("SELECT * FROM eventInformation WHERE userID = ?", x).fetchall()
+    for a in z:
+        print(a)
     

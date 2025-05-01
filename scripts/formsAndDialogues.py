@@ -12,6 +12,13 @@ from PyQt6.QtWidgets import (
     QTextEdit, QListWidget
 )
 
+"""
+TODO: There are several minor and major updates we should make to the different widgets to add more adjustability and alarms.
+- WHen an event submission already exists it should give the option to replace the existing submission.
+- submissions should check for conflicting times for events and todos.
+- notes should not need to be checked for duplicate times or dates. Those bits of informaiton are strictly referencial for notes.
+- Should be an option for setting alarms for events
+"""
 
 class CreateAnAccount(QWidget):
     def __init__(self, db) -> None:                                     # -- Initiates Class Variables and functionality
@@ -647,6 +654,7 @@ class Note(QWidget):
         self.setLayout(self.mainLayout)
 
     def checkEntries(self) -> list:
+        self.errorMessage = ""
         error: bool = False
         if self.titleEntry.text() == "":
             self.errorMessage += "*You must provide a Title*\n"
@@ -666,9 +674,9 @@ class Note(QWidget):
 
 
 class CreateNewEvent(QWidget):
-    def __init__(self, db, userID: int) -> None:
+    def __init__(self, userID: int) -> None:
         super().__init__()
-        self.dataBass = db
+        self.dataBass = DatabaseQueries()
         self.userID = userID
         self.currentSelection: str = "no selection"
         self.applicaitonDict: dict = {
@@ -692,7 +700,7 @@ class CreateNewEvent(QWidget):
 
         self.submitBtn: QPushButton = QPushButton("Submit")
 
-    def initEditWidgets(self) -> None:              # -- Edits widgets before applying them
+    def initEditWidgets(self) -> None:                  # -- Edits widgets before applying them
         self.eventTypeCombo.addItem("No Selection")
         self.eventTypeCombo.addItem("To Do List")
         self.eventTypeCombo.addItem("Event")
@@ -701,14 +709,14 @@ class CreateNewEvent(QWidget):
         for app in self.applicaitonDict.values():
             app.hide()
 
-    def initConnections(self) -> None:              # -- Initiates connections between widgets and functions
+    def initConnections(self) -> None:                  # -- Initiates connections between widgets and functions
         self.eventTypeCombo.currentIndexChanged.connect(self.changeActiveEvent)
         self.submitBtn.clicked.connect(self.submitInformation)
 
-    def initLayouts(self) -> None:                  # -- Initiates the layouts
+    def initLayouts(self) -> None:                      # -- Initiates the layouts
         self.mainLayout: QVBoxLayout = QVBoxLayout()
 
-    def ApplyLayouts(self) -> None:                 # -- Applies widgets to the layouts/applies the main layout
+    def ApplyLayouts(self) -> None:                     # -- Applies widgets to the layouts/applies the main layout
         self.mainLayout.addWidget(self.eventTypeCombo)
         self.mainLayout.addWidget(self.applicaitonDict["to do list"])
         self.mainLayout.addWidget(self.applicaitonDict["event"])
@@ -717,7 +725,7 @@ class CreateNewEvent(QWidget):
 
         self.setLayout(self.mainLayout)
 
-    def changeActiveEvent(self) -> None:            # -- Triggers when the event type is changed in the combo box
+    def changeActiveEvent(self) -> None:                # -- Triggers when the event type is changed in the combo box
         currentIndex: int = self.eventTypeCombo.currentIndex()
         currentSelection: str = self.eventTypeCombo.itemText(currentIndex)
 
@@ -732,8 +740,7 @@ class CreateNewEvent(QWidget):
         
         self.applicaitonDict[self.currentSelection].errorLabel.clear()      # Clears Error Messages
 
-
-    def submitInformation(self) -> None:
+    def submitInformation(self) -> None:                # -- 
         if self.currentSelection == "no selection":
             return
         
@@ -748,18 +755,21 @@ class CreateNewEvent(QWidget):
             elif self.currentSelection == "note":
                 # Time, Date, Title Description
                 success: bool = self.dataBass.submitEventInformation((self.userID,) + tuple(currentSubmittionInformation), "note")
+            else:
+                self.applicaitonDict[self.currentSelection].errorLabel.setText("You have to submit at least one input")
+                return
 
-        if success:
-            print("success")
-            self.close()
-        else:
-            self.applicaitonDict[self.currentSelection].errorLabel.setText("This submission conflicts with a previous submission")
+            if success:
+                pass
+                #self.close()
+            else:
+                self.applicaitonDict[self.currentSelection].errorLabel.setText("This submission conflicts with a previous submission")
         
 
 if __name__ ==  "__main__":
     #Test
     db = DatabaseQueries()
     app = QApplication(sys.argv)
-    createAnAccount: CreateAnAccount = CreateNewEvent(db, 1) #CreateAnAccount()
+    createAnAccount: CreateAnAccount = CreateNewEvent(1) #CreateAnAccount()
     createAnAccount.show()
     sys.exit(app.exec())

@@ -5,9 +5,11 @@
 import os, sys
 
 #from databaseQueries import DatabaseQueries
+from formsAndDialogues import CreateNewEvent
+from calandarWidget import Schedule
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QPushButton
+    QLabel, QPushButton, QTabWidget
 )
 
 
@@ -20,6 +22,7 @@ class SplashPage(QWidget):
         self.initWidgets()
         self.initEditWidgets()
         self.initLayouts()
+        self.initBtnConnections()
         self.initApplyLayouts()
 
     def initWidgets(self) -> None:
@@ -27,23 +30,36 @@ class SplashPage(QWidget):
         self.addNewEventBtn: QPushButton = QPushButton("+")
         self.collectionAppBtn: QPushButton = QPushButton("Collection")
 
+        self.mainWindowTabWidget: QTabWidget = QTabWidget()
+
     def initEditWidgets(self) -> None:
-        pass
+        self.schedule: Schedule = Schedule()
+        self.mainWindowTabWidget.addTab(self.schedule, "Home")
 
     def initBtnConnections(self) -> None: 
-        pass
+        self.addNewEventBtn.clicked.connect(self.addNewEvent)
 
     def initLayouts(self) -> None:
         self.mainLayout: QVBoxLayout = QVBoxLayout()
         self.btnLayout: QHBoxLayout = QHBoxLayout()
+        self.tabLayout: QHBoxLayout = QHBoxLayout()
 
     def initApplyLayouts(self) -> None:
         self.mainLayout.addLayout(self.btnLayout)
+        self.mainLayout.addLayout(self.tabLayout)
+        
         self.btnLayout.addWidget(self.homeBtn)
         self.btnLayout.addWidget(self.addNewEventBtn)
         self.btnLayout.addWidget(self.collectionAppBtn)
 
+        self.tabLayout.addWidget(self.mainWindowTabWidget)
+
         self.setLayout(self.mainLayout)
+
+    def addNewEvent(self) -> None:
+        self.newEventDialogue: CreateNewEvent = CreateNewEvent(1)
+        self.mainWindowTabWidget.addTab(self.newEventDialogue, "New Task")
+        #self.newEventDialogue.show()
 
     
 if __name__ == "__main__":
