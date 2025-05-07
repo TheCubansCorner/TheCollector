@@ -3,6 +3,7 @@
 
 import os, sys, datetime, calendar
 
+from formsAndDialogues import ToDoList, DailyEvent, Note
 from PyQt6.QtWidgets import (
     QWidget, QApplication, QHBoxLayout, QVBoxLayout,
     QPushButton, QLabel
@@ -16,16 +17,24 @@ Calculating if it is a leap year 101:
 - Rule 3: Divisible by 400: If a century year is also evenly divisible by 400, it is considered a leap year.
 """
 
+#TODO -- Create a module that shows the individual day selected within the month CurrentDaysSchedule(year, month, day)
 #TODO -- add button connections to open the scheduled day
 #TODO -- Make the Calendar highlight the current day when opened
 #TODO -- Find a way to make days that have passed. 
 #TODO -- Find a way to format the calendar in Sunday to Saturday fashion
 
+class CurrentDaysSchedule(QWidget):
+    def __init__(self, date: tuple, userId: int) -> None:
+        super().__init__()
+        self.userId: int = userId
+        self.date: tuple = date
+        self.active: bool = True
+
 class Schedule(QWidget):
     def __init__(self) -> None:
         super().__init__()
         self.dayWidgetList: list = []
-        self.weekdays: list = ["Monday", " Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        self.weekdays: list = ["Sunday", "Monday", " Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
         self.monthList: list = [
             "January", "February", "March", "April", "May", "June",
             "July", "August", "September", "October", "November", "December"
@@ -131,34 +140,41 @@ class Schedule(QWidget):
         self.daysWidgets: list = []
         tempDayLayout: QHBoxLayout = QHBoxLayout()
         startDay: int = calendar.monthrange(self.currentYearSelection, self.currentMonthSelection + 1)[0]
-        weekdayCounter: int = 0
         previousMonthEndInfo: int = self.dayCount[self.monthList[self.currentMonthSelection - 1]]
+        weekdayCounter: int = 0
         tempPreviousMonthList: list = []
 
+        if startDay == 6:
+            startDay = 0
+        else:
+            startDay += 1
+   
         if self.currentMonthSelection == 1:
             numberOfDays: int = self.isLeapYear(self.currentYearSelection)
         else:
             numberOfDays: int = self.dayCount[self.monthList[self.currentMonthSelection]]
 
-        for _ in range(startDay):
-            tempPreviousMonthList.append(previousMonthEndInfo)
-            previousMonthEndInfo -= 1
+        if startDay != 0:
+            for _ in range(startDay):
+                tempPreviousMonthList.append(previousMonthEndInfo)
+                previousMonthEndInfo -= 1
 
-        for day in tempPreviousMonthList[::-1]:
-            blankBox: QPushButton = QPushButton(str(day))
-            tempDayLayout.addWidget(blankBox)
-            self.daysWidgets.append(blankBox)
-            
-            weekdayCounter += 1
+            for day in tempPreviousMonthList[::-1]:
+                blankBox: QPushButton = QPushButton(str(day))
+                blankBox.setEnabled(False)
+                tempDayLayout.addWidget(blankBox)
+                self.daysWidgets.append(blankBox)
+                
+                weekdayCounter += 1
 
         for day in range(1, numberOfDays + 1):
             if weekdayCounter > 6:
                 weekdayCounter = 0
                 self.daysLayout.addLayout(tempDayLayout)
                 tempDayLayout = QHBoxLayout()
-                
-
+           
             dayBtn: QPushButton = QPushButton(f"{day}")
+            dayBtn.clicked.connect((lambda checked, text = day: self.currentDaySelection(text)))
             tempDayLayout.addWidget(dayBtn)
             self.daysWidgets.append(dayBtn)
             weekdayCounter += 1
@@ -166,18 +182,23 @@ class Schedule(QWidget):
         endDays: int = 1
         while weekdayCounter <= 6:
             blankBox: QPushButton = QPushButton(f"{endDays}")
+            blankBox.setEnabled(False)
             tempDayLayout.addWidget(blankBox)
             self.daysWidgets.append(blankBox)
             endDays += 1
             weekdayCounter += 1
-
         
         self.daysLayout.addLayout(tempDayLayout)
 
-    def currentDaySelection(self) -> None:
-        pass
-
-
+    def currentDaySelection(self, day: int) -> None:
+        yearMonthDay: tuple = (self.currentMonthSelection + 1, day, self.currentYearSelection) 
+        self.selectedDay: CurrentDaysSchedule = CurrentDaysSchedule(yearMonthDay, self.userId)
+        self.selectedDay.show()
+        self.hide()
+        # - determine the year month and day of the selected date as a tuple
+        # - determine which day of the week that selection is
+        # - Create module with the tuple and day of the week as the arguments
+        print(f"{type(self.currentMonthSelection + 1)}/{type(day)}/{type(self.currentYearSelection)}")
 
 
 if __name__ == "__main__":
