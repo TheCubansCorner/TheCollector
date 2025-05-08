@@ -3,10 +3,13 @@
 
 import os, sys, datetime, calendar
 
-from formsAndDialogues import ToDoList, DailyEvent, Note
+from datetime import timedelta
+from formsAndDialogues import CreateNewEvent
+from PyQt6.QtCore import QTimer, pyqtSignal
+from PyQt6.QtGui import QMouseEvent
 from PyQt6.QtWidgets import (
     QWidget, QApplication, QHBoxLayout, QVBoxLayout,
-    QPushButton, QLabel
+    QPushButton, QLabel, QFrame, QScrollArea, QScrollBar
 )
 
 """
@@ -23,16 +26,142 @@ Calculating if it is a leap year 101:
 #TODO -- Find a way to make days that have passed. 
 #TODO -- Find a way to format the calendar in Sunday to Saturday fashion
 
+class ClickableLabel(QLabel):
+    clicked = pyqtSignal()
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+    def mousePressEvent(self, event: QMouseEvent):
+        if event.button().__str__() == "MouseButton.LeftButton":  # Left mouse button
+            self.clicked.emit()
+        QLabel.mousePressEvent(self, event)
+
+
 class CurrentDaysSchedule(QWidget):
     def __init__(self, date: tuple, userId: int) -> None:
         super().__init__()
-        self.userId: int = userId
-        self.date: tuple = date
         self.active: bool = True
+        self.userId: int = userId
+        self.widgetList: list = []
+        self.date: tuple = date
+        self.hoursList: list = self.generateTime(30)
+        self.initApplication()
+        
+    def initApplication(self) -> None:
+        self.initLayouts()
+        self.initMainWidgets()
+        self.initConnections()
+        self.initApplyLayouts()
+    
+    def initMainWidgets(self) -> None:
+        ###TEST###
+        self.scrollArea: QScrollArea = QScrollArea()
+        self.scrollArea.setWidgetResizable(True)
+        ###TEST###
+
+        self.backBtn: QPushButton = QPushButton("<-")
+        self.dateLabel: QLabel = QLabel(f"{self.date[0]}/{self.date[1]}/{self.date[2]}")
+        self.previousDayBtn: QPushButton = QPushButton("<<")
+        self.nextDayBtn: QPushButton = QPushButton(">>")
+        self.timeLabelList: list = self.generateTimeLabelsList()
+        self.widgetList = [self.backBtn, self.dateLabel, self.previousDayBtn, self.nextDayBtn] + self.timeLabelList
+
+    def initTooltips(self) -> None:
+        self.backBtn.setToolTip("Return to main Calendar")
+        self.dateLabel.setToolTip("Current Date")
+        self.previousDayBtn.setToolTip("Go to previous Day")
+        self.nextDayBtn.setToolTip("Go to next Day")
+
+    def initConnections(self) -> None:
+        self.backBtn.clicked.connect(self.closeApplication)
+
+    def initLayouts(self) -> None:
+        self.mainLayout: QVBoxLayout = QVBoxLayout()
+        self.taskBarLayout: QHBoxLayout = QHBoxLayout()
+        self.timesLayout: QVBoxLayout = QVBoxLayout()
+
+    def initApplyLayouts(self) -> None:
+        self.taskBarLayout.addWidget(self.backBtn)
+        self.taskBarLayout.addWidget(self.dateLabel)
+        self.taskBarLayout.addWidget(self.previousDayBtn)
+        self.taskBarLayout.addWidget(self.nextDayBtn)
+
+        self.mainLayout.addLayout(self.taskBarLayout)
+        self.mainLayout.addLayout(self.timesLayout)
+
+        ###TEST###
+        self.mainLayout.addWidget(self.scrollArea)
+
+        self.setLayout(self.mainLayout)
+
+    def closeApplication(self) -> None:
+        self.active = False
+        self.close()
+        
+    def generateTime(self, interval_minutes):
+        start_time = datetime.datetime.strptime("00:00", "%H:%M")
+        end_time = datetime.datetime.strptime("11:30", "%H:%M")
+        times = []
+        current_time = start_time
+
+        while current_time <= end_time:
+            current: str = current_time.strftime("%H:%M")
+            if current[:2] != "00":
+                times.append(current)
+            else:
+                times.append(f"12{current[2::]}")
+
+            current_time += timedelta(minutes=interval_minutes)
+
+        times = self.formatTimes(times)
+
+        return times
+
+    def formatTimes(self, timeList: list, count: int = 2, newList: list = []) -> list:
+        for time in timeList:
+            if count == 2: 
+                newList.append(time + " AM")
+
+            if count == 1:
+                newList.append(time + " PM")
+
+        count -= 1
+
+        if count > 0:
+            self.formatTimes(timeList, count, newList)
+
+        return newList
+    
+    def generateTimeLabelsList(self) -> list:
+        widgList: list = []
+        contentWidget: QWidget = QWidget()
+        contentLayout: QVBoxLayout = QVBoxLayout()
+        contentWidget.setLayout(contentLayout)
+
+        for time in self.hoursList:
+            label: ClickableLabel = ClickableLabel(time)
+            label.clicked.connect(lambda text = time: self.timeClicked(text))
+            line = QFrame()
+            line.setFrameShape(QFrame.Shape.HLine)
+            line.setFrameShadow(QFrame.Shadow.Sunken)
+            contentLayout.addWidget(label)
+            contentLayout.addWidget(line)
+            widgList.append(label)
+            widgList.append(line)
+        
+        self.scrollArea.setWidget(contentWidget)
+
+        return widgList
+    
+    def timeClicked(self, time) -> None:
+        print(time)
+
 
 class Schedule(QWidget):
-    def __init__(self) -> None:
+    def __init__(self, userID: int) -> None:
         super().__init__()
+        self.fullWidgetList: list = []
         self.dayWidgetList: list = []
         self.weekdays: list = ["Sunday", "Monday", " Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
         self.monthList: list = [
@@ -50,7 +179,7 @@ class Schedule(QWidget):
         self.currentDaysInMonth: int = self.dayCount[self.monthList[self.currentMonthSelection]]
         
         self.dataBass: None
-        self.userId: int = None
+        self.userId: int = userID
         self.initApplication()
 
     def initApplication(self) -> None:
@@ -67,6 +196,8 @@ class Schedule(QWidget):
         self.previousMonthBtn: QPushButton = QPushButton("<<")
         self.forwardMonthBtn: QPushButton = QPushButton(">>")
 
+        self.fullWidgetList = self.fullWidgetList + [self.monthYearLabel, self.previousMonthBtn, self.forwardMonthBtn]
+
     def initEditWidgets(self) -> None:
         self.monthYearLabel.setText(self.currentMonthToDisplay())
 
@@ -82,15 +213,18 @@ class Schedule(QWidget):
         self.weekdayLayout: QHBoxLayout = QHBoxLayout()
         self.daysLayout: QVBoxLayout = QVBoxLayout()
         self.calandarMonthLayout: QHBoxLayout = QHBoxLayout()
+        self.individualDayLayout: QVBoxLayout = QVBoxLayout()
         
     def initApplyLayout(self) -> None:
         self.mainLayout.addLayout(self.calandarMonthLayout)
         self.mainLayout.addLayout(self.weekdayLayout)
         self.mainLayout.addLayout(self.daysLayout)
+        self.mainLayout.addLayout(self.individualDayLayout)
 
         for day in self.weekdays:
             label: QLabel = QLabel(day)
             self.weekdayLayout.addWidget(label)
+            self.fullWidgetList.append(label)
             
         self.calandarMonthLayout.addWidget(self.previousMonthBtn)
         self.calandarMonthLayout.addWidget(self.monthYearLabel)
@@ -119,8 +253,6 @@ class Schedule(QWidget):
             if self.currentMonthSelection < 0:
                 self.currentMonthSelection = 11
                 self.currentYearSelection = int(self.currentYearSelection) - 1
-            
-            self.monthYearLabel.setText(f"{self.monthList[self.currentMonthSelection]} {self.currentYearSelection}")
 
         if direction == ">":
             self.currentMonthSelection += 1
@@ -129,7 +261,7 @@ class Schedule(QWidget):
                 self.currentMonthSelection = 0
                 self.currentYearSelection = int(self.currentYearSelection) + 1   
 
-            self.monthYearLabel.setText(f"{self.monthList[self.currentMonthSelection]} {self.currentYearSelection}")
+        self.monthYearLabel.setText(f"{self.monthList[self.currentMonthSelection]} {self.currentYearSelection}")
 
         for btn in self.daysWidgets:
             btn.close()
@@ -188,21 +320,36 @@ class Schedule(QWidget):
             endDays += 1
             weekdayCounter += 1
         
+        self.fullWidgetList = self.fullWidgetList + self.daysWidgets
+
         self.daysLayout.addLayout(tempDayLayout)
 
+    def hideShowWidgets(self, hideShow: str) -> None:
+        for widg in self.fullWidgetList:
+            if hideShow == "hide":
+                widg.hide()
+            else:
+                widg.show()
+        
     def currentDaySelection(self, day: int) -> None:
         yearMonthDay: tuple = (self.currentMonthSelection + 1, day, self.currentYearSelection) 
         self.selectedDay: CurrentDaysSchedule = CurrentDaysSchedule(yearMonthDay, self.userId)
-        self.selectedDay.show()
-        self.hide()
-        # - determine the year month and day of the selected date as a tuple
-        # - determine which day of the week that selection is
-        # - Create module with the tuple and day of the week as the arguments
-        print(f"{type(self.currentMonthSelection + 1)}/{type(day)}/{type(self.currentYearSelection)}")
+
+        self.hideShowWidgets("hide")
+        self.individualDayLayout.addWidget(self.selectedDay)
+
+        self.currentDayChecker: QTimer = QTimer()
+        self.currentDayChecker.timeout.connect(self.currentDayActive)
+        self.currentDayChecker.start(250)
+    
+    def currentDayActive(self) -> None:
+        if self.selectedDay.active == False:
+            self.hideShowWidgets("show")
+            self.currentDayChecker.stop()
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    schedule: Schedule = Schedule()
+    schedule: Schedule = Schedule(1)
     schedule.show()
     sys.exit(app.exec())
